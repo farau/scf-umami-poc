@@ -92,6 +92,29 @@ export function visitsForDay(tenant: Tenant, date: string) {
   });
 }
 
+export type AnalyticsStream = 'web' | 'api' | 'both';
+export type DataErasure = {
+  tenantId: string;
+  stream: AnalyticsStream;
+  startDate: string;
+  endDate: string;
+};
+
+export function isDataErased(
+  tenantId: string,
+  stream: 'web' | 'api',
+  date: string,
+  erasures: DataErasure[],
+) {
+  return erasures.some(
+    rule =>
+      rule.tenantId === tenantId &&
+      (rule.stream === 'both' || rule.stream === stream) &&
+      date >= rule.startDate &&
+      date <= rule.endDate,
+  );
+}
+
 export type ApiRow = {
   tenantId: string;
   service: string;
@@ -114,11 +137,17 @@ export function percentile(histogram: number[], fraction: number): number {
 export function mergeHistograms(histograms: number[][]) {
   return LATENCY_BOUNDS.map((_, i) => histograms.reduce((sum, h) => sum + h[i], 0));
 }
-export function apiRows(tenants: Tenant[], dates: string[]): ApiRow[] {
+export function apiRows(
+  tenants: Tenant[],
+  dates: string[],
+  erasures: DataErasure[] = [],
+): ApiRow[] {
   return tenants.flatMap(tenant =>
     ROUTES.map((route, index) => {
       const requests = tenant.seed
-        ? dates.reduce((sum, date) => sum + 700 + (daySeed(tenant, date) % 900) + index * 139, 0)
+        ? dates
+            .filter(date => !isDataErased(tenant.id, 'api', date, erasures))
+            .reduce((sum, date) => sum + 700 + (daySeed(tenant, date) % 900) + index * 139, 0)
         : 0;
       const errors = Math.floor(requests * (0.006 + index * 0.003));
       const clientErrors = Math.floor(requests * 0.021);
@@ -135,7 +164,7 @@ export function apiRows(tenants: Tenant[], dates: string[]): ApiRow[] {
     }),
   );
 }
-export function webMetrics(tenants: Tenant[], dates: string[]) {
+export function webMetrics(tenants: Tenant[], dates: string[], erasures: DataErasure[] = []) {
   const countries: Record<string, number> = {},
     browsers: Record<string, number> = {},
     devices: Record<string, number> = {},
@@ -149,6 +178,7 @@ export function webMetrics(tenants: Tenant[], dates: string[]) {
     let dayViews = 0,
       dayVisitors = 0;
     for (const tenant of tenants) {
+      if (isDataErased(tenant.id, 'web', date, erasures)) continue;
       visitsForDay(tenant, date).forEach((visit, i) => {
         dayVisitors++;
         dayViews += visit.pageviews;

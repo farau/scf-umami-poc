@@ -32,12 +32,44 @@ L'interface est en anglais pour faciliter la présentation au SCF.
 5. Choisir un projet dans le sélecteur pour prévisualiser la perspective tenant.
 6. Add project : inscription gratuite, identité tenant + website, puis instructions d'intégration.
    Les nouveaux projets commencent à zéro. Cet ajout est en mémoire et disparaît au rechargement.
-7. Export : JSON des données synthétiques correspondant au périmètre et à la période.
+7. Export : JSON des données synthétiques et du journal correspondant au périmètre et à la période.
+8. SCF administration : métriques standardisées par projet, répartition du trafic API et actions de gestion.
+9. Data & privacy : suppression web/API/les deux sur la période courante ou tout l’historique ; retrait d’un projet et de ses données, après saisie du nom exact.
 
 Les sélecteurs représentent des perspectives UX et ne constituent pas une authentification.
 Les fixtures sont publiques ; aucune isolation de production ni RLS n'est implémentée.
 La démo ne stocke pas de données personnelles ni ne vérifie les preuves d'appartenance à Stellar.
 Les changements de projets ne sont pas écrits en base. Pas de promesse RGPD ou de SLA dans ce POC.
+
+## Administration et effacement des données
+
+L’entrée **SCF administration** est disponible dans la perspective globale. Elle regroupe les visiteurs,
+pages vues, rebond, durée, volume API, erreurs 5xx et latences par projet, avec recherche, tri,
+répartition du trafic et accès aux contrôles de données. Elle permet de préparer le rôle opérateur SCF.
+
+**Data & privacy** est accessible aux deux perspectives. Un tenant ne peut sélectionner que son projet.
+L’opérateur peut sélectionner un projet de l’écosystème. Deux actions sont proposées :
+
+- **Erase analytics** conserve le projet et ses identifiants ; les données web, API ou les deux peuvent
+  être effacées sur la période du dashboard ou tout l’historique disponible (90 jours de fixtures).
+- **Delete project and all data** retire le projet et ses métriques de toutes les vues. Le motif permet
+  notamment d’illustrer le retrait d’un projet hors écosystème par SCF.
+
+La confirmation précise le projet, les flux, les dates UTC et les compteurs affectés. Un motif et la
+saisie exacte du nom du projet sont requis. Annuler ou fermer la fenêtre n’applique rien.
+Les suppressions s’appliquent immédiatement aux tableaux, graphiques, comparaisons, agrégats et exports.
+La suppression du dernier projet est prise en charge ; il reste possible d’ajouter un nouveau projet.
+
+Le journal de session conserve le libellé du projet, l’acteur simulé, la période, les compteurs et le motif.
+Il reste consultable après le retrait d’un projet. Dans la perspective tenant, seuls les événements
+concernant ce tenant sont affichés et exportés.
+
+**Périmètre du POC :** ces actions ne modifient que l’état React et les filtres des fixtures dans le navigateur.
+Un rechargement restaure les trois projets d’origine et vide le journal. Elles n’appellent aucune API de
+suppression native, n’effacent aucune donnée PostgreSQL, ne révoquent aucune clé et ne purgent pas les sauvegardes.
+Les restrictions de perspective ne constituent pas une autorisation authentifiée. La suppression réelle,
+la politique de conservation du journal et la propagation de l’effacement aux systèmes de production
+restent à implémenter. La rétention de 24 mois reste un objectif de production, pas un réglage actif du POC.
 
 ## Contrat tenant et réutilisation d'Umami
 
@@ -116,7 +148,7 @@ Console : https://railway.com/project/d967db78-142e-4416-9b9e-1df0bb801621
 | ajout de tenants à €0, simulé | inscription persistante, validation, retrait, approbation |
 | mapping `tenant.id` / équipe Umami | collector OTLP, double export, authentification de l'ingestion |
 | normalisation fixe des routes | ingestion et agrégats PostgreSQL conservés 24 mois |
-| métriques synthétiques cohérentes | détection de fraude/bots, conformité, effacement |
+| métriques synthétiques cohérentes et parcours d’effacement en session | détection de fraude/bots, conformité et effacement réel |
 | déploiement Railway à une instance | HA, réplication, bascule, supervision et SLA |
 | snippet Umami natif indicatif | tracker immuable versionné, SRI et durcissement de la collecte |
 
@@ -132,11 +164,11 @@ pnpm exec vitest run src/lib/scf/demo.test.ts
 pnpm exec biome check src/app/scf src/lib/scf scripts/seed-scf-demo.ts src/app/api/scf src/app/page.tsx src/app/UmamiRootPage.tsx
 ```
 
-Les tests couvrent la cohérence des agrégats, l'attribution tenant, les projets vides,
-la normalisation des routes et les percentiles fusionnés.
+Les tests couvrent la cohérence des agrégats, l’attribution tenant, la normalisation, les percentiles,
+les effacements par flux/période, les confirmations, le retrait des projets et l’écosystème vide.
 
 Validation effectuée sur cette implémentation : compilation de production Next.js 16.4.6,
-vérification TypeScript, Biome, 6 tests de données et parcours Chrome ordinateur/mobile
+vérification TypeScript, Biome, 15 tests de données et de gestion et parcours Chrome ordinateur/mobile
 (sur serveur de développement et artefact de production sans base).
 Les 27 migrations natives ont été appliquées sur un PostgreSQL 15 temporaire :
 13 392 sessions / 39 446 événements, inchangés après un second seed.

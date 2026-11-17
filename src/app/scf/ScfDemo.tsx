@@ -8,6 +8,7 @@ import {
   Check,
   ChevronRight,
   Code2,
+  Database,
   Globe2,
   Layers3,
   LayoutDashboard,
@@ -31,15 +32,20 @@ import {
   type Tenant,
   webMetrics,
 } from '@/lib/scf/demo';
+import { applyDeletion, type DeletionRequest, initialManagementState } from '@/lib/scf/management';
+import { AdminDashboard } from './AdminDashboard';
+import { DataManagement } from './DataManagement';
 import styles from './scf.module.css';
 
 const fmt = (n: number) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n);
 const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'admin', label: 'SCF administration', icon: ShieldCheck },
   { id: 'web', label: 'Web analytics', icon: Globe2 },
   { id: 'api', label: 'API analytics', icon: Activity },
   { id: 'tenants', label: 'Projects', icon: Layers3 },
   { id: 'integration', label: 'Integration', icon: Code2 },
+  { id: 'data', label: 'Data & privacy', icon: Database },
 ];
 
 function Breakdown({
@@ -75,7 +81,10 @@ function Breakdown({
 }
 
 export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
-  const [tenants, setTenants] = useState<Tenant[]>(DEMO_TENANTS);
+  const [data, setData] = useState(initialManagementState);
+  const { tenants, erasures, audit } = data;
+  const [manageTenantId, setManageTenantId] = useState(DEMO_TENANTS[0].id);
+  const [manageAction, setManageAction] = useState<'erase' | 'remove'>('erase');
   const [scope, setScope] = useState('all');
   const [tab, setTab] = useState('overview');
   const [days, setDays] = useState(30);
@@ -87,18 +96,22 @@ export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
   const [path, setPath] = useState('/v1/payments/12845?asset=USDC');
   const [now] = useState(() => new Date());
   const dates = useMemo(() => daysInRange(days, now), [days, now]);
+  const allDates = useMemo(() => daysInRange(90, now), [now]);
   const active = tenants.find(t => t.id === scope);
   const selected = active ? [active] : tenants;
-  const web = useMemo(() => webMetrics(selected, dates), [tenants, scope, dates]);
-  const api = useMemo(() => apiRows(selected, dates), [tenants, scope, dates]);
+  const web = useMemo(
+    () => webMetrics(selected, dates, erasures),
+    [tenants, scope, dates, erasures],
+  );
+  const api = useMemo(() => apiRows(selected, dates, erasures), [tenants, scope, dates, erasures]);
   const requests = api.reduce((sum, r) => sum + r.requests, 0);
   const statuses = [0, 1, 2].map(i => api.reduce((sum, r) => sum + r.statuses[i], 0));
   const histogram = mergeHistograms(api.map(r => r.histogram));
   const projectRows = selected
     .filter(t => `${t.name} ${t.domain}`.toLowerCase().includes(search.toLowerCase()))
     .map(tenant => {
-      const w = webMetrics([tenant], dates);
-      const a = apiRows([tenant], dates);
+      const w = webMetrics([tenant], dates, erasures);
+      const a = apiRows([tenant], dates, erasures);
       const total = a.reduce((s, r) => s + r.requests, 0);
       return {
         tenant,
@@ -124,7 +137,21 @@ export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
 
   function exportData() {
     const blob = new Blob(
-      [JSON.stringify({ synthetic: true, scope, dates, tenants: selected, web, api }, null, 2)],
+      [
+        JSON.stringify(
+          {
+            synthetic: true,
+            scope,
+            dates,
+            tenants: selected,
+            web,
+            api,
+            audit: active ? audit.filter(entry => entry.tenantId === active.id) : audit,
+          },
+          null,
+          2,
+        ),
+      ],
       { type: 'application/json' },
     );
     const url = URL.createObjectURL(blob);
@@ -158,11 +185,42 @@ export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
       category: String(form.get('category')),
       seed: 0,
     };
-    setTenants([...tenants, tenant]);
+    setData({ ...data, tenants: [...tenants, tenant] });
     setShowAdd(false);
+    setManageAction('erase');
     setScope(tenant.id);
     setTab('integration');
     setNotice(`${name} added for free. Demo changes last until the page is refreshed.`);
+  }
+
+  function deleteData(request: DeletionRequest) {
+    try {
+      const next = applyDeletion(data, request, {
+        perspective: scope,
+        dates: allDates,
+        at: new Date().toISOString(),
+        id: crypto.randomUUID(),
+      });
+      setData(next);
+      setCompare(ids => ids.filter(id => next.tenants.some(tenant => tenant.id === id)));
+      if (!next.tenants.some(tenant => tenant.id === scope) && scope !== 'all') {
+        setScope('all');
+        setTab('data');
+      }
+      setNotice(
+        request.action === 'remove'
+          ? 'Project and synthetic data removed from this demo session. Refresh restores the original dataset.'
+          : 'Selected synthetic data erased. Dashboards, comparisons and exports have been updated. Refresh restores the original dataset.',
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to apply this demo action.');
+    }
+  }
+
+  function manageData(id: string, remove = false) {
+    setManageTenantId(id);
+    setManageAction(remove ? 'remove' : 'erase');
+    setTab('data');
   }
 
   const summaryCards = [
@@ -204,7 +262,9 @@ export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
             value={scope}
             onChange={e => {
               setScope(e.target.value);
+              setManageAction('erase');
               setCompare([]);
+              if (tab === 'admin' || tab === 'tenants') setTab('overview');
             }}
           >
             {<option value="all">SCF · All projects</option>}
@@ -220,7 +280,7 @@ export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
         </span>
         <nav aria-label="Analytics navigation">
           {tabs
-            .filter(t => !active || t.id !== 'tenants')
+            .filter(t => !active || (t.id !== 'tenants' && t.id !== 'admin'))
             .map(item => (
               <button
                 type="button"
@@ -344,6 +404,35 @@ export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
               </select>
             </div>
           </div>
+
+          {tab === 'admin' && !active && (
+            <AdminDashboard
+              tenants={tenants}
+              dates={dates}
+              erasures={erasures}
+              audit={audit}
+              onView={id => {
+                setScope(id);
+                setTab('overview');
+                setCompare([]);
+              }}
+              onManage={manageData}
+            />
+          )}
+          {tab === 'data' && (
+            <DataManagement
+              key={`${active?.id || 'all'}-${manageTenantId}-${manageAction}`}
+              tenants={selected}
+              initialTenantId={active?.id || manageTenantId}
+              initialAction={manageAction}
+              dates={dates}
+              allDates={allDates}
+              erasures={erasures}
+              audit={active ? audit.filter(entry => entry.tenantId === active.id) : audit}
+              isAdmin={!active}
+              onDelete={deleteData}
+            />
+          )}
 
           {(tab === 'overview' || tab === 'web' || tab === 'api') && (
             <>
@@ -645,8 +734,8 @@ export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
                     {tenants
                       .filter(t => compare.includes(t.id))
                       .map(t => {
-                        const w = webMetrics([t], dates);
-                        const rows = apiRows([t], dates);
+                        const w = webMetrics([t], dates, erasures);
+                        const rows = apiRows([t], dates, erasures);
                         return (
                           <section key={t.id}>
                             <strong>{t.name}</strong>
@@ -671,7 +760,7 @@ export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
             </section>
           )}
 
-          {tab === 'integration' && (
+          {tab === 'integration' && tenants.length > 0 && (
             <div className={styles.integrationGrid}>
               <section className={styles.card}>
                 <div className={styles.step}>01 · PROJECT IDENTITY</div>
@@ -779,6 +868,18 @@ export default function ScfDemo({ nativeEnabled }: { nativeEnabled: boolean }) {
                 </p>
               </section>
             </div>
+          )}
+
+          {tab === 'integration' && tenants.length === 0 && (
+            <section className={styles.card}>
+              <h3>No project to integrate</h3>
+              <p className={styles.empty}>
+                Add a project for free to get its tenant and website identifiers.
+              </p>
+              <button type="button" className={styles.primary} onClick={() => setShowAdd(true)}>
+                Add a project
+              </button>
+            </section>
           )}
 
           <div className={styles.commitment}>

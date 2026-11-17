@@ -994,3 +994,293 @@
   background: #42684e;
   color: #f2f8ef;
 }
+
+/* SCF administration and tenant data controls. */
+.sidebar {
+  overflow-y: auto;
+}
+.shell textarea {
+  font: inherit;
+  color: var(--ink);
+  background: #111b15;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  resize: vertical;
+  width: 100%;
+}
+.shell textarea:focus-visible {
+  outline: 2px solid #8fd4ae;
+  outline-offset: 3px;
+}
+.shell button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.adminIntro {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 22px;
+  margin-bottom: 22px;
+  border: 1px solid #36513d;
+  border-radius: 9px;
+  background: #1b2b20;
+}
+.adminIntro > svg {
+  flex-shrink: 0;
+  color: #8fd4ae;
+}
+.adminIntro h2 {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+}
+.adminIntro p {
+  font-size: 11px;
+  color: #a5b9a1;
+  margin-top: 5px;
+}
+.adminIntro > span {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.shell .rowActions button {
+  font-size: 10px;
+  padding: 6px 8px;
+}
+.shell .dangerLink {
+  color: #f1a5a5;
+}
+.shell .dangerButton {
+  background: #753333;
+  border-color: #a65050;
+  color: #fff0f0;
+}
+.shell .dangerButton:hover:not(:disabled) {
+  background: #8d3e3e;
+}
+.ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 19px;
+  margin-top: 23px;
+}
+.ranking > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  font-size: 12px;
+}
+.ranking > div > div {
+  grid-column: 1 / -1;
+  height: 7px;
+  background: #27352b;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.ranking i {
+  display: block;
+  height: 100%;
+  background: #8fd4ae;
+  border-radius: 4px;
+}
+.reasonCell {
+  min-width: 160px;
+  max-width: 280px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.projectSelect {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.actionChoices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 23px 0;
+}
+.shell .actionChoices button {
+  justify-content: flex-start;
+  text-align: left;
+  padding: 18px;
+}
+.actionChoices strong,
+.actionChoices small {
+  display: block;
+}
+.actionChoices small {
+  color: var(--muted);
+  margin-top: 4px;
+  font-size: 11px;
+}
+.shell .actionChoices .actionSelected {
+  border-color: #79bc92;
+  background: #243c2c;
+}
+.dataFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+.dataForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 12px;
+}
+.impactGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #111b15;
+  margin: 20px 0;
+  padding: 18px;
+  gap: 15px;
+}
+.impactGrid span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+.impactGrid strong {
+  display: block;
+  font-size: 23px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+.deleteNotice {
+  font-size: 11px !important;
+  line-height: 1.8;
+  color: #b4bfae;
+  margin-top: 18px !important;
+}
+.dataFormFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 20px;
+}
+.dataFormFooter > span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.erasureExplanation {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+  margin-top: 20px;
+}
+.erasureExplanation strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.erasureExplanation p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.confirmDialog {
+  color: var(--ink);
+  border: 1px solid #704646;
+  margin: auto;
+}
+.confirmDialog::backdrop {
+  background: #030906bd;
+  backdrop-filter: blur(3px);
+}
+.dangerBadge {
+  color: #efb0b0;
+  background: #472a2a;
+  padding: 4px 9px;
+  border-radius: 5px;
+  font-size: 10px;
+}
+.deletionSummary {
+  background: #111b15;
+  border: 1px solid var(--line);
+  padding: 15px;
+  border-radius: 7px;
+  margin-top: 18px;
+}
+.deletionSummary > div {
+  display: grid;
+  grid-template-columns: 85px 1fr;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 11px;
+}
+.deletionSummary dt {
+  color: var(--muted);
+}
+.deletionSummary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.shell .confirmActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+.confirmDialog form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (max-width: 800px) {
+  .adminIntro {
+    flex-wrap: wrap;
+  }
+  .adminIntro > span {
+    margin-left: 38px;
+  }
+  .actionChoices,
+  .dataFields {
+    grid-template-columns: 1fr;
+  }
+  .erasureExplanation {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .dataFormFooter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media (max-width: 560px) {
+  .impactGrid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+  .impactGrid > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .impactGrid strong {
+    margin-top: 0;
+    font-size: 19px;
+  }
+  .projectSelect {
+    flex-wrap: wrap;
+  }
+  .shell .confirmActions {
+    flex-direction: column-reverse;
+  }
+  .adminIntro {
+    padding: 16px;
+  }
+}

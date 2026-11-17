@@ -2,6 +2,23 @@
 
 This file tracks changes made by the Stellar SCF analytics POC. Upstream Umami release history is available in the [Umami releases](https://github.com/umami-software/umami/releases).
 
+## POC 0.2.0 — 2026-11-17
+
+### Added
+
+- Dedicated SCF administration dashboard with project-level web/API metrics, search/sorting, API traffic distribution and project-management shortcuts.
+- Data & privacy controls for operators and tenant perspectives, with web/API/both erasure for the selected range or all available fixture history.
+- Project removal with an exact-name confirmation, required reason and affected-data preview.
+- Session activity records for erasure/removal, including actor perspective, UTC period and affected counts; tenant-filtered journal exports.
+- Consistent recalculation of dashboards, comparisons, histograms and exports after erasure.
+- Empty ecosystem handling, including integration and enrollment after the last project is removed.
+- Nine additional management tests (15 total) for erasure boundaries, stream separation, tenant guards, overlapping erasures and project removal.
+
+### Scope
+
+- Data actions are session-only fixture operations and reset on refresh. They do not call native Umami deletion APIs or modify database records, backups or production credentials.
+- Administrator and tenant perspectives remain simulated; authenticated authorization, persistent audit logs and production erasure remain outside the POC.
+
 ## POC 0.1.0 — 2026-11-17
 
 The first published POC is based on Umami 3.5.0. The upstream application version remains unchanged; `0.1.0` identifies this POC milestone only.

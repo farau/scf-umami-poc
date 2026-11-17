@@ -18,6 +18,10 @@ The fixture dataset is bundled in the application. The perspective selector filt
 
 Enrollment adds an empty project to React state. A refresh resets those additions. Export downloads synthetic JSON for the selected scope and time range. Demo state is not stored on the server.
 
+The global perspective also contains a dedicated SCF administration dashboard. It computes per-project metrics from the same fixture helpers and offers data-management shortcuts. The Data & privacy screen adds tenant-scoped erasure masks, project removal and a session-only activity log. All dashboard calculations and exports use the masks. Erasing analytics preserves the project IDs; removing a project excludes it from every scope. Refresh restores the initial state.
+
+An exact-name confirmation and a reason are required. Pure management helpers reject actions for another tenant in a tenant perspective, but these are client-side UX guards, not authentication. No demo action calls native Umami deletion APIs or mutates PostgreSQL. The activity log retains project labels/reasons for this session, including after project removal; it is not a durable production audit system.
+
 ## Native Umami option
 
 ```mermaid
@@ -56,7 +60,10 @@ The fixed path normalizer removes queries/fragments, collapses trailing/repeated
 | --- | --- |
 | `src/app/scf/` | Dashboard UI, styling and server-side demo gate |
 | `src/lib/scf/demo.ts` | Shared deterministic dataset and normalization/calculation helpers |
-| `src/lib/scf/demo.test.ts` | Analytics invariants and tenant attribution tests |
+| `src/lib/scf/demo.test.ts` | Analytics, tenant attribution and data-erasure invariants |
+| `src/lib/scf/management.ts` | Demo erasure/project-removal actions, impact calculations and session activity records |
+| `src/app/scf/AdminDashboard.tsx` | SCF operator oversight and activity log |
+| `src/app/scf/DataManagement.tsx` | Tenant/operator data controls and confirmation dialogs |
 | `src/app/api/scf/health/route.ts` | Application health for demo deployments |
 | `src/app/UmamiRootPage.tsx` | Preserved original Umami root behavior |
 | `scripts/dev-scf.mjs` | Database-free local development entry |

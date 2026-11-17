@@ -11,6 +11,8 @@ This proof of concept explores the [SCF Web and API Analytics RFP](https://stell
 ## What you can try
 
 - **SCF overview:** ecosystem totals, project search, sorting and side-by-side comparison.
+- **SCF administration:** project oversight with standardized web/API metrics, project search/sorting, traffic distribution and per-project data actions.
+- **Data & privacy:** erase web, API or both streams for the selected period or all available history; delete a project and its data with exact-name confirmation and a session activity log.
 - **Tenant perspective:** switch to one project to preview its web and API dashboards.
 - **Web analytics:** visitors, page views, bounce rate, visit duration, referrers, countries, browsers and devices, using Umami's native chart component.
 - **API analytics:** request volumes, HTTP status distribution, normalized routes and histogram-based p50/p95 estimates.
@@ -71,14 +73,32 @@ The repeatable seed creates three teams, three websites, tenant accounts, an SCF
 
 Follow the [complete setup and account instructions](docs/SCF-POC.md#dashboard-umami-natif-avec-un-postgresql-simple-facultatif), including changing Umami's initial default administrator password before exposing native login.
 
+## SCF administration and data erasure
+
+Open **SCF administration** in the global perspective to compare projects and review their visitors, views, bounce rate, session duration, API volume, server error rate and p50/p95 latency. Each project has shortcuts to its dashboard and data controls.
+
+In **Data & privacy**, choose a project (administrators) or use the current project (tenant perspective), then:
+
+1. Choose analytics erasure or project deletion.
+2. For analytics, choose web/API/both and the current dashboard period or all available history.
+3. Review affected visitor, pageview and request counts, and provide a reason.
+4. Review the confirmation dialog and type the exact project name to apply the action.
+
+Erasure updates the charts, breakdowns, comparisons, admin totals and subsequent JSON exports. Analytics erasure keeps enrollment and integration IDs. Project deletion also removes enrollment. A session activity log records the actor perspective, project, reason, period and affected counts; its export is filtered to the current tenant perspective.
+
+**These controls operate on synthetic browser-session data only.** Refreshing restores the original dataset. They never call Umami's native deletion APIs, touch PostgreSQL records, revoke production credentials or purge backups. They are a UX demonstration of the intended erasure workflow, not a production right-to-erasure service. The perspective restrictions are client-side demo guards, not authenticated access control.
+
+![SCF operator administration dashboard](docs/images/scf-admin.png)
+
 ## Scope and limitations
 
 | Included in this POC | Production work still required |
 | --- | --- |
-| Synthetic web/API dashboards and tenant perspectives | Persistent enrollment and SCF-specific authorization |
+| Synthetic web/API dashboards, SCF administration and tenant perspectives | Persistent enrollment and SCF-specific authorization |
 | `tenant.id` mapped to Umami teams | Strict database isolation / row-level security |
 | €0 tenant enrollment UX | Actual self-service onboarding and ecosystem verification |
 | API fixtures and route normalization | Authenticated OpenTelemetry ingestion and metrics storage |
+| Session-only erasure, project removal and activity log | Durable audit trail and authenticated deletion from live systems |
 | Single-instance Railway deployment | High availability, failover, monitoring and SLA validation |
 | Indicative Umami integration snippet | Immutable versioned tracker, SRI and collection hardening |
 
@@ -96,7 +116,7 @@ pnpm exec biome check src/app/scf src/lib/scf scripts/seed-scf-demo.ts scripts/d
 
 `build:db` needs `DATABASE_URL` to be set, but it generates clients without connecting. See [CONTRIBUTING.md](CONTRIBUTING.md) for a database-free check environment and the dedicated POC CI workflow.
 
-The POC has been checked with TypeScript, Biome, six analytics tests, production builds, desktop/mobile browser flows and a temporary PostgreSQL instance for native Umami access checks. The public Railway deployment and its healthcheck were also verified.
+The POC has been checked with TypeScript, Biome, 15 analytics and data-management tests, production builds, desktop/mobile browser flows and a temporary PostgreSQL instance for native Umami access checks. The public Railway deployment and its healthcheck were also verified.
 
 ## Documentation and attribution
 
