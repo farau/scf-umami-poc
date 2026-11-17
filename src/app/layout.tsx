@@ -29,11 +29,17 @@ export default async function ({ children }) {
   // Force request-time rendering so config reflects runtime env, not build-time env.
   await connection();
 
+  const demoTheme = process.env.SCF_DEMO_MODE === 'true' ? 'dark' : undefined;
   const config = getConfig();
   const flags = await getFlagValues();
 
   return (
-    <html lang="en" className={`${inter.className} ${inter.variable}`}>
+    <html
+      lang="en"
+      data-theme={demoTheme}
+      style={demoTheme ? { colorScheme: 'dark' } : undefined}
+      className={`${inter.className} ${inter.variable}`}
+    >
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -48,7 +54,7 @@ export default async function ({ children }) {
       </head>
       <body>
         <Suspense>
-          <Providers config={config} flags={flags}>
+          <Providers config={config} flags={flags} theme={demoTheme}>
             {children}
           </Providers>
         </Suspense>

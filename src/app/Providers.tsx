@@ -37,16 +37,18 @@ function MessagesProvider({ children }) {
 export function Providers({
   config,
   flags,
+  theme,
   children,
 }: {
   config: Config;
   flags: FlagValues;
+  theme?: 'dark';
   children: ReactNode;
 }) {
   return (
     <ConfigContext.Provider value={config}>
       <FlagsContext.Provider value={flags}>
-        <ZenProvider>
+        <ZenProvider theme={theme}>
           <RouterProvider>
             <MessagesProvider>
               <QueryClientProvider client={client}>

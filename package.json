@@ -70,7 +70,9 @@
     "lint": "biome lint .",
     "lint:i18n": "eloqnt lint",
     "format": "biome format --write .",
-    "check": "biome check --write"
+    "check": "biome check --write",
+    "dev:scf": "node scripts/dev-scf.mjs",
+    "seed:scf": "tsx scripts/seed-scf-demo.ts"
   },
   "cacheDirectories": [
     ".next/cache"
@@ -112,7 +114,7 @@
     "lucide-react": "^1.53.0",
     "maxmind": "^5.0.7",
     "motion": "^14.0.0",
-    "next": "16.4.2",
+    "next": "16.4.6",
     "next-intl": "4.14.9",
     "node-fetch": "^3.2.8",
     "npm-run-all": "^4.1.5",

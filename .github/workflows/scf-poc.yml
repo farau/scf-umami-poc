@@ -1,0 +1,41 @@
+name: SCF POC CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DATABASE_URL: postgresql://demo:demo@127.0.0.1:5432/scf_demo
+  DISABLE_TELEMETRY: '1'
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:db
+      - run: pnpm run build:packages
+      - run: pnpm exec tsc --noEmit
+      - name: Check POC formatting and lint
+        run: pnpm exec biome check src/app/scf src/lib/scf scripts/seed-scf-demo.ts scripts/dev-scf.mjs scripts/start-scf.mjs src/app/api/scf src/app/page.tsx src/app/UmamiRootPage.tsx src/app/Providers.tsx src/app/layout.tsx
+      - run: pnpm exec vitest run src/lib/scf/demo.test.ts
+      - run: pnpm run build:tracker:script
+      - run: pnpm run build:app

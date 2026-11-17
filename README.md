@@ -1,135 +1,110 @@
-<p align="center">
-  <img src="https://content.umami.is/website/images/umami-logo.png" alt="Umami Logo" width="100">
-</p>
+# Stellar SCF Analytics POC
 
-<h1 align="center">Umami</h1>
+A dark-mode web and API analytics demo for Stellar ecosystem projects, built on [Umami](https://github.com/umami-software/umami) 3.5.0.
 
-<p align="center">
-  <i>Umami is an open-source web and product analytics platform. Understand acquisition, behavior, conversion, and retention with privacy-first analytics — no cookies, self-hosted or in the cloud.</i>
-</p>
+**[Open the live demo](https://scf-umami-poc-production.up.railway.app/scf)** · [Technical guide](docs/SCF-POC.md) · [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md)
 
-<p align="center">
-  <a href="https://github.com/umami-software/umami/releases"><img src="https://img.shields.io/github/release/umami-software/umami.svg" alt="GitHub Release" /></a>
-  <a href="https://github.com/umami-software/umami/blob/master/LICENSE"><img src="https://img.shields.io/github/license/umami-software/umami.svg" alt="MIT License" /></a>
-  <a href="https://github.com/umami-software/umami/actions"><img src="https://img.shields.io/github/actions/workflow/status/umami-software/umami/ci.yml" alt="Build Status" /></a>
-  <a href="https://cloud.umami.is/share/LGazGOecbDtaIwDr/umami.is" style="text-decoration: none;"><img src="https://img.shields.io/badge/Try%20Demo%20Now-Click%20Here-brightgreen" alt="Umami Demo" /></a>
-</p>
+![SCF analytics dashboard in dark mode](docs/images/scf-dashboard.png)
 
----
+This proof of concept explores the [SCF Web and API Analytics RFP](https://stellar.gitbook.io/scf-handbook/scf-awards/build-award/rfp-track#web-and-api-analytics-for-stellar-ecosystem-projects). It demonstrates the dashboard experience and data contracts using fictional projects and synthetic traffic. It does not collect real analytics.
 
-## 🚀 Getting Started
+## What you can try
 
-A detailed getting started guide can be found at [umami.is/docs](https://umami.is/docs/).
+- **SCF overview:** ecosystem totals, project search, sorting and side-by-side comparison.
+- **Tenant perspective:** switch to one project to preview its web and API dashboards.
+- **Web analytics:** visitors, page views, bounce rate, visit duration, referrers, countries, browsers and devices, using Umami's native chart component.
+- **API analytics:** request volumes, HTTP status distribution, normalized routes and histogram-based p50/p95 estimates.
+- **Time ranges:** consistent datasets for the last 7, 30 or 90 days.
+- **Free enrollment:** add a project for €0 and preview its integration identifiers. New projects start with zero activity. Additions reset on refresh.
+- **Exports:** download the selected scope and time range as synthetic JSON data.
+- **Dark mode:** all demo screens, forms, charts and modal dialogs, including on mobile.
 
----
+`tenant.id` maps to an existing **Umami `Team.id`**. A team's web properties use `Website.teamId`; API fixtures carry the same tenant attribution. No new database model is required for the POC.
 
-## 🛠 Installing from Source
+## Run locally without a database
 
-### Requirements
+Prerequisites: Node.js **22.23.4** and pnpm **12.3.4** (the versions used by the POC container).
 
-- A server with Node.js version 20.19+ (22 LTS recommended).
-- A PostgreSQL database version v12.14+.
-
-### Get the source code and install packages
-
-```bash
-git clone https://github.com/umami-software/umami.git
-cd umami
-pnpm install
+```sh
+git clone https://github.com/farau/scf-umami-poc.git
+cd scf-umami-poc
+pnpm install --frozen-lockfile
+DATABASE_URL=postgresql://demo:demo@127.0.0.1:5432/scf_demo pnpm run generate:db:client
+pnpm run dev:scf
 ```
 
-### Configure Umami
+Open **http://localhost:3000/scf**. The placeholder URL above is used to generate the Prisma client; no PostgreSQL server is required. The launch script enables demo mode, disables Umami telemetry and generates an ephemeral application secret when none is configured.
 
-Create an `.env` file with the following:
+The demo is public and requires no login. Its perspective selector is an experience preview, **not an authorization boundary**. When `SCF_DEMO_MODE` is disabled, the application uses the original Umami entry flow.
 
-```bash
-DATABASE_URL=connection-url
-APP_SECRET=random-string  # generate with: openssl rand -hex 32
+## Deploy the demo
+
+Use **`Dockerfile.poc`**, which builds the application and starts `/scf` without running migrations or requiring a database.
+
+```sh
+docker build -f Dockerfile.poc -t scf-umami-poc .
+docker run --rm -p 3000:3000 scf-umami-poc
 ```
 
-The connection URL format:
+For Railway, configure the service with:
 
-```bash
-postgresql://username:mypassword@localhost:5432/mydb
+| Setting | Value |
+| --- | --- |
+| Dockerfile | `Dockerfile.poc` |
+| Dockerfile environment override | `RAILWAY_DOCKERFILE_PATH=Dockerfile.poc` |
+| Demo mode | `SCF_DEMO_MODE=true` |
+| Umami telemetry | `DISABLE_TELEMETRY=1` |
+| Healthcheck | `/api/scf/health` |
+| Healthcheck timeout | 120 seconds |
+| Replicas | 1 |
+| Public domain target port | Match the injected `PORT` (8080 on the live deployment) |
+
+The container listens on `0.0.0.0` and respects Railway's `PORT`. Do not choose the upstream `Dockerfile` for this database-free demo: its startup checks require PostgreSQL.
+
+The live service was deployed from the local checkout using `railway up`. **Publishing this repository does not configure GitHub autodeploys.** See the [technical guide](docs/SCF-POC.md#railway) for deployment details.
+
+## Optional: native Umami dashboard
+
+To demonstrate the original Umami screens with generated web events, use one dedicated PostgreSQL database, run Umami's migrations, and execute `pnpm run seed:scf` with `SCF_DEMO_MODE=true` and an explicit `SCF_SEED_PASSWORD` of at least 12 characters.
+
+The repeatable seed creates three teams, three websites, tenant accounts, an SCF operator and 90 days of synthetic web traffic. It preserves existing accounts and skips duplicate sessions/events. Set `SCF_NATIVE_ENABLED=true` to show native dashboard links in the integration screen.
+
+Follow the [complete setup and account instructions](docs/SCF-POC.md#dashboard-umami-natif-avec-un-postgresql-simple-facultatif), including changing Umami's initial default administrator password before exposing native login.
+
+## Scope and limitations
+
+| Included in this POC | Production work still required |
+| --- | --- |
+| Synthetic web/API dashboards and tenant perspectives | Persistent enrollment and SCF-specific authorization |
+| `tenant.id` mapped to Umami teams | Strict database isolation / row-level security |
+| €0 tenant enrollment UX | Actual self-service onboarding and ecosystem verification |
+| API fixtures and route normalization | Authenticated OpenTelemetry ingestion and metrics storage |
+| Single-instance Railway deployment | High availability, failover, monitoring and SLA validation |
+| Indicative Umami integration snippet | Immutable versioned tracker, SRI and collection hardening |
+
+**High availability is planned for production and is not implemented in this demo.** No SLA, GDPR certification or production isolation is claimed. Tenant fees are €0; infrastructure still has operating costs. There is no AWS/EC2 dependency in this POC.
+
+## Development checks
+
+```sh
+pnpm run build:db
+pnpm run build:packages
+pnpm exec tsc --noEmit
+pnpm exec vitest run src/lib/scf/demo.test.ts
+pnpm exec biome check src/app/scf src/lib/scf scripts/seed-scf-demo.ts scripts/dev-scf.mjs scripts/start-scf.mjs src/app/api/scf src/app/page.tsx src/app/UmamiRootPage.tsx src/app/Providers.tsx src/app/layout.tsx
 ```
 
-### Build the Application
+`build:db` needs `DATABASE_URL` to be set, but it generates clients without connecting. See [CONTRIBUTING.md](CONTRIBUTING.md) for a database-free check environment and the dedicated POC CI workflow.
 
-```bash
-pnpm run build
-```
+The POC has been checked with TypeScript, Biome, six analytics tests, production builds, desktop/mobile browser flows and a temporary PostgreSQL instance for native Umami access checks. The public Railway deployment and its healthcheck were also verified.
 
-The build step will create tables in your database if you are installing for the first time. It will also create a login user with username **admin** and password **umami**. You will be required to change this password after signing in.
+## Documentation and attribution
 
-### Start the Application
+- [Technical guide and demo walkthrough](docs/SCF-POC.md) (French)
+- [Architecture and data boundaries](docs/ARCHITECTURE.md)
+- [Changelog](CHANGELOG.md)
+- [Contribution guide](CONTRIBUTING.md)
+- [Original Umami README](docs/UPSTREAM-README.md)
+- [Upstream Umami documentation](https://umami.is/docs/)
 
-```bash
-pnpm run start
-```
-
-By default, this will launch the application on `http://localhost:3000`. You will need to either [proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/) requests from your web server or change the [port](https://nextjs.org/docs/api-reference/cli#production) to serve the application directly.
-
-To bind to the `HOSTNAME` and `PORT` set in your `.env` file, start with `pnpm run start:env` instead.
-
----
-
-## 🐳 Installing with Docker
-
-Umami provides Docker images as well as a Docker compose file for easy deployment.
-
-Docker image:
-
-```bash
-docker pull docker.umami.is/umami-software/umami:latest
-```
-
-Docker compose (Runs Umami with a PostgreSQL database):
-
-```bash
-docker compose up -d
-```
-
----
-
-## 🔄 Getting Updates
-
-To get the latest features, simply do a pull, install any new dependencies, and rebuild:
-
-```bash
-git pull
-pnpm install
-pnpm build
-```
-
-To update the Docker image, simply pull the new images and rebuild:
-
-```bash
-docker compose pull
-docker compose up --force-recreate -d
-```
-
----
-
-## 🛟 Support
-
-<p align="center">
-  <a href="https://github.com/umami-software/umami"><img src="https://img.shields.io/badge/GitHub--blue?style=social&logo=github" alt="GitHub" /></a>
-  <a href="https://twitter.com/umami_software"><img src="https://img.shields.io/badge/Twitter--blue?style=social&logo=twitter" alt="Twitter" /></a>
-  <a href="https://linkedin.com/company/umami-software"><img src="https://img.shields.io/badge/LinkedIn--blue?style=social&logo=linkedin" alt="LinkedIn" /></a>
-  <a href="https://umami.is/discord"><img src="https://img.shields.io/badge/Discord--blue?style=social&logo=discord" alt="Discord" /></a>
-</p>
-
-[release-shield]: https://img.shields.io/github/release/umami-software/umami.svg
-[releases-url]: https://github.com/umami-software/umami/releases
-[license-shield]: https://img.shields.io/github/license/umami-software/umami.svg
-[license-url]: https://github.com/umami-software/umami/blob/master/LICENSE
-[build-shield]: https://img.shields.io/github/actions/workflow/status/umami-software/umami/ci.yml
-[build-url]: https://github.com/umami-software/umami/actions
-[github-shield]: https://img.shields.io/badge/GitHub--blue?style=social&logo=github
-[github-url]: https://github.com/umami-software/umami
-[twitter-shield]: https://img.shields.io/badge/Twitter--blue?style=social&logo=twitter
-[twitter-url]: https://twitter.com/umami_software
-[linkedin-shield]: https://img.shields.io/badge/LinkedIn--blue?style=social&logo=linkedin
-[linkedin-url]: https://linkedin.com/company/umami-software
-[discord-shield]: https://img.shields.io/badge/Discord--blue?style=social&logo=discord
-[discord-url]: https://discord.com/invite/4dz4zcXYrQ
+Based on Umami Software, Inc.'s open-source application. The upstream copyright and **[MIT license](LICENSE)** are preserved. This is a proof of concept responding to an SCF RFP; it is not an official Stellar or SCF service.
